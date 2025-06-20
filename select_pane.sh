@@ -25,12 +25,6 @@ function select_pane() {
         --list-border --list-label ' Panes ' \
         --preview-border --preview-label ' Preview '"
     fi
-    # - 0.61.0 or later, we can enable ghost text
-    vercomp '0.61.0' "${fzf_version}"
-    fzf_version_comparison=$?
-    if [[ ${fzf_version_comparison} -ne 1 ]]; then
-        border_styling+=" --ghost 'type to search...'"
-    fi
     # Fallback to old border styling used in tmux-fzf-pane-switch release v1.1.2 if $border_styling is not set
     if [[ -z ${border_styling+x} ]]; then
         border_styling="--preview-label='pane preview'"
