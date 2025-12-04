@@ -5,10 +5,11 @@
 # If you press ENTER on an empty line, it creates a new window in the current session.
 function select_pane() {
     local border_styling="" fzf_version_comparison
-    local current_pane pane pane_id preview
+    local current_pane pane pane_id preview current_session
 
-    # Save the currently active pane ID
+    # Save the currently active pane ID and session name
     current_pane=$(tmux display-message -p '#{pane_id}')
+    current_session=$(tmux display-message -p '#{session_name}')
 
     # Setup border styling
     # Specific fzf releases have added additional styling options.
@@ -18,7 +19,7 @@ function select_pane() {
     fzf_version_comparison=$?
     if [[ ${fzf_version_comparison} -ne 1 ]]; then
         border_styling+=" --input-border --input-label=' Search ' --info=inline-right"
-        border_styling+=" --list-border --list-label=' Panes '"
+        border_styling+=" --list-border --list-label=' Panes [Session: ${current_session}] '"
         border_styling+=" --preview-border --preview-label=' Preview '"
     fi
     # Fallback to old border styling used in tmux-fzf-pane-switch release v1.1.2 if $border_styling is not set
@@ -32,8 +33,8 @@ function select_pane() {
     fi
 
     # Launch switcher
-    pane=$(tmux list-panes -aF "${4}" |
-        eval fzf --border=none --exit-0 --print-query --reverse --tmux "${2}" --with-nth=2.. "${border_styling}" "${preview}" |
+    pane=$(tmux list-panes -aF "${4}" | sed "s|$HOME|~|g" |
+        eval fzf --border=none --exit-0 --print-query --reverse --tmux "${2}" --with-nth=2.. --disabled --bind 'j:down,k:up' "${border_styling}" "${preview}" |
         tail -1)
 
     # Set pane_id to first part of fzf output
