@@ -4,12 +4,8 @@
 # If you press ENTER, it switches to the selected pane.
 # If you press ENTER on an empty line, it creates a new window in the current session.
 function select_pane() {
-    local border_styling
-    local current_pane
-    local fzf_version_comparison
-    local pane
-    local pane_id
-    local preview
+    local border_styling="" fzf_version_comparison
+    local current_pane pane pane_id preview
 
     # Save the currently active pane ID
     current_pane=$(tmux display-message -p '#{pane_id}')
@@ -21,9 +17,9 @@ function select_pane() {
     vercomp '0.58.0' "${fzf_version}"
     fzf_version_comparison=$?
     if [[ ${fzf_version_comparison} -ne 1 ]]; then
-        border_styling+="--input-border --input-label ' Search ' --info=inline-right \
-        --list-border --list-label ' Panes ' \
-        --preview-border --preview-label ' Preview '"
+        border_styling+=" --input-border --input-label=' Search ' --info=inline-right"
+        border_styling+=" --list-border --list-label=' Panes '"
+        border_styling+=" --preview-border --preview-label=' Preview '"
     fi
     # Fallback to old border styling used in tmux-fzf-pane-switch release v1.1.2 if $border_styling is not set
     if [[ -z ${border_styling+x} ]]; then
@@ -57,30 +53,33 @@ function select_pane() {
 }
 
 function vercomp() {
-    if [[ $1 == $2 ]]
-    then
-        return 0
+  local v1="$1"
+  local v2="$2"
+
+  # Split each version string into arrays using '.' as the delimiter
+  IFS='.' read -r -a ver1 <<< "$v1"
+  IFS='.' read -r -a ver2 <<< "$v2"
+
+  # Compare major, minor, and patch components one by one
+  for i in 0 1 2; do
+    # Default to 0 if a component is missing (e.g., "1.2" becomes "1.2.0")
+    local num1="${ver1[i]:-0}"
+    local num2="${ver2[i]:-0}"
+
+    # Compare the numeric values of the current component
+    if (( num1 > num2 )); then
+      return 1  # First version is newer
+    elif (( num1 < num2 )); then
+      return 2  # First version is older
     fi
-    local IFS=.
-    local i ver1=($1) ver2=($2)
-    # fill empty fields in ver1 with zeros
-    for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
-    do
-        ver1[i]=0
-    done
-    for ((i=0; i<${#ver1[@]}; i++))
-    do
-        if ((10#${ver1[i]:=0} > 10#${ver2[i]:=0}))
-        then
-            return 1
-        fi
-        if ((10#${ver1[i]} < 10#${ver2[i]}))
-        then
-            return 2
-        fi
-    done
-    return 0
+  done
+
+  return 0  # Versions are equal
 }
+
+# Check for required commands
+command -v tmux >/dev/null 2>&1 || { echo "tmux not found"; exit 1; }
+command -v fzf >/dev/null 2>&1 || { echo "fzf not found"; exit 1; }
 
 # Pane preview
 preview_pane="${1}"
